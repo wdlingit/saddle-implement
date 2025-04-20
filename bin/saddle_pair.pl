@@ -1,6 +1,6 @@
 #!/usr/bin/env -S perl -w
 
-my $debug = 1;
+$| = 1;
 
 my $randomSeed   = 0;
 my $badnessMinOverlap = 4; # as suggested in the paper
@@ -166,6 +166,7 @@ while(not $stop){
         $stop = 1;
     }
 }
+close scoreOUT;
 
 #### SADDLE iteration, END
 
