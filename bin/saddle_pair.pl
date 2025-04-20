@@ -8,6 +8,7 @@ my $maxIteration = 60000;
 my $maxTolIter   = 20000;
 my $tolC         = 100;
 my %outIters     = ();
+my $badnessEval  = "";
 
 my $usage = "Usage: saddle_pair.pl [options] <genePairedPrimerFile> <outPrefix>\n";
 $usage   .= "           -rand       : random seed (default: $randomSeed)\n";
@@ -16,6 +17,7 @@ $usage   .= "           -maxIt      : maximum iteration (default: $maxIteration)
 $usage   .= "           -maxTolIt   : maximum tolerance iteration (default: $maxTolIter)\n";
 $usage   .= "           -tolC       : factor C for tolerance threshold (default: $tolC)\n";
 $usage   .= "           -outIter    : iterations to output answers (default: none)\n";
+$usage   .= "           -badness    : no iteration and compute badness of iteration outputs (default: no)\n";
 
 # optional parameter
 my @arg_idx=(0..@ARGV-1);
@@ -38,11 +40,31 @@ for my $i (0..@ARGV-1) {
 	}elsif ($ARGV[$i] eq '-outIter') {
 		$outIters{$ARGV[$i+1]} = 1;
 		delete @arg_idx[$i,$i+1];
+	}elsif ($ARGV[$i] eq '-badness') {
+		$badnessEval = $ARGV[$i+1];
+		delete @arg_idx[$i,$i+1];
 	}
 }
 my @new_arg;
 for (@arg_idx) { push(@new_arg,$ARGV[$_]) if (defined($_)); }
 @ARGV=@new_arg;
+
+if(length($badnessEval)>0){
+    open(FILE,"<$badnessEval");
+    my @strings = ();
+    while(<FILE>){
+        my @t=split;
+        shift @t;
+        push @strings, (shift @t);
+        push @strings, (shift @t);
+    }
+    close FILE;
+
+    my %nullCache = ();
+    print "".badness_total(\@strings, $badnessMinOverlap, \%nullCache)."\n";
+    
+    exit 0;
+}
 
 # regular parameters
 my $primerFile = shift or die $usage;
@@ -78,7 +100,7 @@ my %answerSet = (); # $answerSet{gene} = index of answer
 my $answerSetRef = \%answerSet;
 
 for my $g (sort keys %genePrimerPairs){
-    $answerSet{$g} = rand(@{$genePrimerPairs{$g}});
+    $answerSet{$g} = int(rand(@{$genePrimerPairs{$g}}));
 }
 
 # iteration 0
@@ -89,7 +111,8 @@ my $current_badness = badness_total(collect_primers_pair(\%genePrimerPairs,$answ
 if(exists $outIters{$iteration}){
     open(iterOUT, ">$outPrefix.$iteration");
     for my $g (sort keys %answerSet){
-        print iterOUT "$g\t$answerSet{$g}\n";
+        my @primers = @{${$genePrimerPairs{$g}}[$answerSetRef->{$g}]};
+        print iterOUT "$g\t$primers[0]\t$primers[1]\n";
     }
     close(iterOUT);
 }
@@ -132,7 +155,8 @@ while(not $stop){
     if(exists $outIters{$iteration}){
         open(iterOUT, ">$outPrefix.$iteration");
         for my $g (sort keys %answerSet){
-            print iterOUT "$g\t$answerSet{$g}\n";
+            my @primers = @{${$genePrimerPairs{$g}}[$answerSetRef->{$g}]};
+            print iterOUT "$g\t$primers[0]\t$primers[1]\n";
         }
         close(iterOUT);
     }
