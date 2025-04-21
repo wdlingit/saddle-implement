@@ -119,6 +119,16 @@ $min = 1/$min;
 
 open(scoreOUT,">$outPrefix.score");
 scoreOUT->autoflush(1);
+
+# GA parameters
+print scoreOUT "GA related parameters:\n";
+print scoreOUT "  -GApopulation : $ga_population\n";
+print scoreOUT "  -GAcrossover  : $ga_crossover\n";
+print scoreOUT "  -GAmutation   : $ga_mutation\n";
+
+# iterations
+print scoreOUT "\n";
+print scoreOUT "Iteration best and worst\n";
 print scoreOUT "$iteration $max $min\n";
 
 while($iteration<$maxIteration){
