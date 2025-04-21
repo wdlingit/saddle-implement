@@ -4,7 +4,7 @@ Implement of the iteration part of the SADDLE framework (PMID: 35410464) for mul
 
 ## `saddle_pair.pl`
 
-Perl implementation of the iteration part as described in the paper. The only exception is that the C(g) function in Eq4 was replaced by a constant, which can be specified by `-tolC`. You may use `maxTolIt` to specify the iteration to stop the tolerance mechanism.
+Perl implementation of the iteration part as described in the paper. The only exception is that the C(g) function in Eq4 was replaced by a constant, which can be specified by `-tolC`. You may use `-maxTolIt` to specify the iteration to stop the tolerance mechanism.
 
 ```
 saddle-implement/bin$ ./saddle_pair.pl
@@ -39,6 +39,8 @@ Usage: saddleGA_pair.pl [options] <genePairedPrimerFile> <outPrefix>
            -GAcrossover  : GA parameter crossover (default: 0.9)
            -GAmutation   : GA parameter mutation (default: 0.05)
 ```
+
+Note that it seems that the option `-rand` is affecting the initial generation only. This might because `AI::Genetic::Pro` is generating random numbers by some specific module.
 
 The input file `genePairedPrimerFile` is as described for script `saddle_pair.pl`. Other files with name prefix `outPrefix` are:
 1. `<outPrefix>.score`: GA parameters at the beginning, and the best and the worst badness for each generation/iteration.
