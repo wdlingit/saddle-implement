@@ -146,6 +146,9 @@ for(my $i=0; $i<@bests; $i++){
     }
     close iterOUT;
 }
+
+# save GA states
+$ga->save("$outPrefix.GA");
     
 #### SADDLE GA iteration, END
 
