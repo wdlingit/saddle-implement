@@ -40,6 +40,8 @@ Usage: saddleGA_pair.pl [options] <genePairedPrimerFile> <outPrefix>
            -GAmutation   : GA parameter mutation (default: 0.05)
 ```
 
+Note that it seems that the option `-rand` is affecting the initial generation only. This might because `AI::Genetic::Pro` is generating random numbers by some specific module.
+
 The input file `genePairedPrimerFile` is as described for script `saddle_pair.pl`. Other files with name prefix `outPrefix` are:
 1. `<outPrefix>.score`: GA parameters at the beginning, and the best and the worst badness for each generation/iteration.
 2. `<outPrefix>.bestN`: primer pair combination of best N individuals. This number can be specified by `-report`.
