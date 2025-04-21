@@ -4,7 +4,7 @@ Implement of the iteration part of the SADDLE framework (PMID: 35410464) for mul
 
 ## `saddle_pair.pl`
 
-Perl implementation of the iteration part as described in the paper. The only exception is that the C(g) function in Eq4 was replaced by a constant, which can be specified by `-tolC`. You may use `maxTolIt` to specify the iteration to stop the tolerance mechanism.
+Perl implementation of the iteration part as described in the paper. The only exception is that the C(g) function in Eq4 was replaced by a constant, which can be specified by `-tolC`. You may use `-maxTolIt` to specify the iteration to stop the tolerance mechanism.
 
 ```
 saddle-implement/bin$ ./saddle_pair.pl
