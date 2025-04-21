@@ -219,7 +219,7 @@ sub badness_total {
 
     my $ans = 0;
     for(my $i=0; $i<@{$arrRef}; $i++){
-        for(my $j=0; $j<=$i; $j++){
+        for(my $j=0; $j<=@{$arrRef}; $j++){
             $ans += badness_pair($$arrRef[$i], $$arrRef[$j], $minOverlap, $cacheRef);
         }
     }
