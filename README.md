@@ -25,7 +25,7 @@ The input file `genePairedPrimerFile` should be a three column tab-delimited tex
 1. `<outPrefix>.score`: badness of each iteration
 2. `<outPrefix>.n`: primer pair combination of iteration `n`, specified by `-outIter`. This option can be applied multiple times. You may assign one such file to option `-badness` for confirming its badness.
 
-Under WSL ubuntu of my desktop PC, this script took less than 30 minutes for 96 targets.
+Under WSL ubuntu of my desktop PC, this script (with default parameters) took less than 30 minutes for 96 targets.
 
 ## `saddleGA_pair.pl`
 
