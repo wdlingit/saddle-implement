@@ -6,7 +6,7 @@ Implement of the iteration part of the SADDLE framework (PMID: 35410464) for mul
 
 Perl implementation of the iteration part as described in the paper. The only exception is that the C(g) function in Eq4 was replaced by a constant, which can be specified by `-tolC`. You may use `-maxTolIt` to specify the iteration to stop the tolerance mechanism.
 
-NOTE: In this implementation, _badness_ is computed directly following Eq1 and Eq2 from the SADDLE paper. The _hash_ described in the paper was not included. Insteadly, this implementation caches _badness_ of all ever-computed primer pairs. When computing _badness_ of one given pair pair, min-mer lookup table and dot plot approaches were applied. This should be faster than simple substring comparisons.
+NOTE: In this implementation, _badness_ is computed directly following Eq1 and Eq2 from the SADDLE paper. The _hash_ described in the paper was not included. Insteadly, this implementation caches _badness_ of all ever-computed primer pairs. When computing _badness_ of one given primer pair, min-mer lookup table and dot plot approaches were applied. This should be faster than simple substring comparisons.
 
 ```
 saddle-implement/bin$ ./saddle_pair.pl
