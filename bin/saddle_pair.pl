@@ -9,6 +9,7 @@ my $maxTolIter   = 20000;
 my $tolC         = 100;
 my %outIters     = ();
 my $badnessEval  = "";
+my $startWith    = "";
 
 my $usage = "Usage: saddle_pair.pl [options] <genePairedPrimerFile> <outPrefix>\n";
 $usage   .= "           -rand       : random seed (default: $randomSeed)\n";
@@ -18,6 +19,7 @@ $usage   .= "           -maxTolIt   : maximum tolerance iteration (default: $max
 $usage   .= "           -tolC       : factor C for tolerance threshold (default: $tolC)\n";
 $usage   .= "           -outIter    : iterations to output answers (default: none)\n";
 $usage   .= "           -badness    : no iteration and compute badness of iteration outputs (default: no)\n";
+$usage   .= "           -startWith  : start the iteration with primer pairs assigned in given file (default: \"\")\n";
 
 # optional parameter
 my @arg_idx=(0..@ARGV-1);
@@ -43,12 +45,16 @@ for my $i (0..@ARGV-1) {
 	}elsif ($ARGV[$i] eq '-badness') {
 		$badnessEval = $ARGV[$i+1];
 		delete @arg_idx[$i,$i+1];
+	}elsif ($ARGV[$i] eq '-startWith') {
+		$startWith = $ARGV[$i+1];
+		delete @arg_idx[$i,$i+1];
 	}
 }
 my @new_arg;
 for (@arg_idx) { push(@new_arg,$ARGV[$_]) if (defined($_)); }
 @ARGV=@new_arg;
 
+# evaluation only (-badness)
 if(length($badnessEval)>0){
     open(FILE,"<$badnessEval");
     my @strings = ();
@@ -73,7 +79,7 @@ my $outPrefix  = shift or die $usage;
 # init random seed
 srand($randomSeed);
 
-# read file
+# read primer pair file
 my %genePrimerPairs = (); # $genePrimerPair{gene} = [[p11, p12], [p21, p22], ...]
 
 open(FILE,"<$primerFile");
@@ -95,12 +101,17 @@ close FILE;
 # cache for pair badness answers
 my %pairBadnessCache = (); # $pairBadness{p1, p2} = badness
 
-# randomized initial set and its badness
+### randomized initial set and its badness
 my %answerSet = (); # $answerSet{gene} = index of answer
 my $answerSetRef = \%answerSet;
 
-for my $g (sort keys %genePrimerPairs){
-    $answerSet{$g} = int(rand(@{$genePrimerPairs{$g}}));
+if(length($startWith)==0){ # no startWith file
+    for my $g (sort keys %genePrimerPairs){
+        $answerSet{$g} = int(rand(@{$genePrimerPairs{$g}}));
+    }
+}else{ # with startWith file
+    $answerSetRef = answerSet_fromFile($startWith, \%genePrimerPairs, $primerFile);
+    %answerSet = %{$answerSetRef}; # overwrite
 }
 
 # iteration 0
@@ -117,12 +128,19 @@ if(exists $outIters{$iteration}){
     close(iterOUT);
 }
 
-open(scoreOUT,">$outPrefix.score");
-print scoreOUT "$iteration\t$current_badness\n";
-
 #### SADDLE iteration
 
+open(scoreOUT,">$outPrefix.score");
+scoreOUT->autoflush(1);
+
+print scoreOUT "$iteration\t$current_badness\n";
+
 my $stop = 0;
+# check here for $maxIteration zero
+if($iteration >= $maxIteration){
+    $stop = 1;
+}
+
 while(not $stop){
     # alter one primer pair, randomly
     my $newAnswerSetRef = answerSet_alterOne(\%genePrimerPairs,$answerSetRef);
@@ -169,6 +187,72 @@ while(not $stop){
 close scoreOUT;
 
 #### SADDLE iteration, END
+
+# subroutine: get answer set from a given file
+sub answerSet_fromFile {
+    my $filename = shift;
+    my $genePrimerPairsRef = shift;
+    my $primerFile = shift;
+    
+    my %newAnswerSet = ();
+    my %geneChecked = ();
+    
+    open(my $fh, "<$filename");
+    while(<$fh>){
+        my @t=split;
+        
+        # very simple format checking, assuming 3 tokens
+        if(3 != @t){
+            print STDERR "not 3 tokens in one line: $_\n";
+            exit 1;
+        }
+        
+        my $g = shift @t;
+        my $p1 = shift @t;
+        my $p2 = shift @t;
+        
+        # gene token must be in genePrimerPairRef
+        if(not exists $genePrimerPairsRef->{$g}){
+            print STDERR "$g from file $filename not in gene-primer pair file\n";
+            exit 1;
+        }
+        
+        my @primerPairList = @{$genePrimerPairsRef->{$g}};
+        my $hit = 0;
+        for(my $i=0; $i<@primerPairList; $i++){
+            my @primerPair = @{$primerPairList[$i]};
+            if( ($primerPair[0] eq $p1) && ($primerPair[1] eq $p2) ){
+                $hit = 1;
+                $newAnswerSet{$g} = $i;
+                $geneChecked{$g}++;
+                
+                # no duplication allowed
+                if($geneChecked{$g}>1){
+                     print STDERR "$g duplicated file $filename\n";
+                     exit 1;
+                }
+                
+                last;
+            }
+        }
+        # must have a hit
+        if(not $hit){
+            print STDERR "$g $p1 $p2 from file $filename not in gene-primer pair file\n";
+            exit 1;
+        }
+    }
+    close $fh;
+    
+    # gene counts must match
+    my $cnt1 = keys %{$genePrimerPairsRef};
+    my $cnt2 = keys %geneChecked;
+    if($cnt1 != $cnt2){
+        print STDERR "gene numbers in $filename not the same with $primerFile\n";
+        exit 1;
+    }
+    
+    return \%newAnswerSet;
+}
 
 # subroutine: answer set manipulation, alter one primer pair
 sub answerSet_alterOne {
