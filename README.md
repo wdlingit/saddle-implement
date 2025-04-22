@@ -16,11 +16,12 @@ Usage: saddle_pair.pl [options] <genePairedPrimerFile> <outPrefix>
            -tolC       : factor C for tolerance threshold (default: 100)
            -outIter    : iterations to output answers (default: none)
            -badness    : no iteration and compute badness of iteration outputs (default: no)
+           -startWith  : start the iteration with primer pairs assigned in given file (default: "")
 ```
 
 The input file `genePairedPrimerFile` should be a three column tab-delimited text file. In this input file, each line represents one primer pair by three tokens: (i) target ID, (ii) left primer, and (iii) right primer. The selection would be for primer pairs but not for individual primers. `outPrefix` specifies the output prefix of a number of output files:
 1. `<outPrefix>.score`: badness of each iteration
-2. `<outPrefix>.n`: primer pair combination of iteration `n`, specified by `-outIter`. This option can be applied multiple times.
+2. `<outPrefix>.n`: primer pair combination of iteration `n`, specified by `-outIter`. This option can be applied multiple times. You may assign one such file to option `-badness` for confirming its badness.
 
 Under WSL ubuntu of my desktop PC, this script took less than 30 minutes for 96 targets.
 
@@ -44,7 +45,7 @@ Note that it seems that the option `-rand` is affecting the initial generation o
 
 The input file `genePairedPrimerFile` is as described for script `saddle_pair.pl`. Other files with name prefix `outPrefix` are:
 1. `<outPrefix>.score`: GA parameters at the beginning, and the best and the worst badness for each generation/iteration.
-2. `<outPrefix>.bestN`: primer pair combination of best N individuals. This number can be specified by `-report`.
+2. `<outPrefix>.bestN`: primer pair combination of best N individuals. This number can be specified by `-report`. These files can be applied to options `-badness` and `startWith` of `saddle_pair.pl`.
 3. `<outPrefix>.GA`: GA state file. This file should be loadable by the `AI::Genetic::Pro` module.
 
 Under WSL ubuntu of my desktop PC, this script (with default parameters) took about one hour for 96 targets.
