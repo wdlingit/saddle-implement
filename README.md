@@ -16,7 +16,7 @@ Usage: saddle_pair.pl [options] <genePairedPrimerFile> <outPrefix>
            -tolC       : factor C for tolerance threshold (default: 100)
            -outIter    : iterations to output answers (default: none)
            -badness    : no iteration and compute badness of iteration outputs (default: no)
-           -startWith  : start the iteration with primer pairs assigned in given file (default: "")
+           -startWith  : start iterations with primer pairs assigned in the given file (default: "")
 ```
 
 The input file `genePairedPrimerFile` should be a three column tab-delimited text file. In this input file, each line represents one primer pair by three tokens: (i) target ID, (ii) left primer, and (iii) right primer. The selection would be for primer pairs but not for individual primers. `outPrefix` specifies the output prefix of a number of output files:
