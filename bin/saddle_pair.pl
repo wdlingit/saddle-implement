@@ -19,7 +19,7 @@ $usage   .= "           -maxTolIt   : maximum tolerance iteration (default: $max
 $usage   .= "           -tolC       : factor C for tolerance threshold (default: $tolC)\n";
 $usage   .= "           -outIter    : iterations to output answers (default: none)\n";
 $usage   .= "           -badness    : no iteration and compute badness of iteration outputs (default: no)\n";
-$usage   .= "           -startWith  : start the iteration with primer pairs assigned in given file (default: \"\")\n";
+$usage   .= "           -startWith  : start iterations with primer pairs assigned in the given file (default: \"\")\n";
 
 # optional parameter
 my @arg_idx=(0..@ARGV-1);
