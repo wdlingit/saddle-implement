@@ -190,11 +190,8 @@ sub badness_total {
     my $ans = 0;
     for(my $i=0; $i<@{$arrRef}; $i++){
         for(my $j=0; $j<=$i; $j++){
-            if($i==$j){
-                $ans += badness_pair($$arrRef[$i], $$arrRef[$j], $minOverlap, $cacheRef);
-            }else{
-                $ans += (2*badness_pair($$arrRef[$i], $$arrRef[$j], $minOverlap, $cacheRef));
-            }
+            # strictly follow Eq1 of the SADDLE paper
+            $ans += badness_pair($$arrRef[$i], $$arrRef[$j], $minOverlap, $cacheRef);
         }
     }
     
