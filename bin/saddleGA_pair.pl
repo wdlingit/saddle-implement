@@ -14,6 +14,9 @@ my $ga_population = 200;
 my $ga_crossover  = 0.9;
 my $ga_mutation   = 0.05;
 
+# layered parameters
+my $as_child = 0; # set this to 1 to be called by other programs
+
 my $usage = "Usage: saddleGA_pair.pl [options] <genePairedPrimerFile> <outPrefix>\n";
 $usage   .= "           -rand       : random seed (default: $randomSeed)\n";
 $usage   .= "           -minOverlap : minimum reversecomplement to compute badness (default: $badnessMinOverlap)\n";
@@ -47,6 +50,9 @@ for my $i (0..@ARGV-1) {
 	}elsif ($ARGV[$i] eq '-GAmutation') {
 		$ga_mutation = $ARGV[$i+1];
 		delete @arg_idx[$i,$i+1];
+	}elsif ($ARGV[$i] eq '-as_child') {
+		$as_child = $ARGV[$i+1];
+		delete @arg_idx[$i,$i+1];
 	}
 }
 my @new_arg;
@@ -64,7 +70,14 @@ srand($randomSeed);
 my %genePrimerPairs = (); # $genePrimerPair{gene} = [[p11, p12], [p21, p22], ...]
 my $genePrimerPairsRef = \%genePrimerPairs;
 
-open(FILE,"<$primerFile");
+my %injectMap  = ();
+my $injectFlag = 0;
+
+if($as_child){
+    open(FILE,"<&",STDIN);
+}else{
+    open(FILE,"<$primerFile");
+}
 while(<FILE>){
     chomp;
     my @t=split;
@@ -74,9 +87,16 @@ while(<FILE>){
         print STDERR "not 3 tokens in one line: $_\n";
         exit 1;
     }
-    
+
     my $g = shift @t;
-    push @{$genePrimerPairs{$g}}, [$t[0], $t[1]];
+    # input file inject handling
+    if($g=~/^!INJECT!(\S+)/){
+        $g = $1;
+        $injectFlag = 1;
+        push @{$injectMap{$g}}, $t[0], $t[1];
+    }else{
+        push @{$genePrimerPairs{$g}}, [$t[0], $t[1]];
+    }
 }
 close FILE;
 
@@ -112,13 +132,42 @@ for my $g (sort keys %{$genePrimerPairsRef}){
 
 $ga->init(\@initArray);
 
+# inject if needed
+if($injectFlag){
+    # use keys from genePrimerPairsRef to avoid error and simple checking
+    my @injArr = ();
+    for my $g (sort keys %{$genePrimerPairsRef}){
+        if(not exists $injectMap{$g}){
+            die "$g not found in inject target\n";
+        }
+        my $foundFlag = 0;
+        for(my $i=0;$i<@{$genePrimerPairs{$g}};$i++){
+            if( ($injectMap{$g}[0] eq ${$genePrimerPairs{$g}[$i]}[0]) &&
+                ($injectMap{$g}[1] eq ${$genePrimerPairs{$g}[$i]}[1]) ){
+                $foundFlag = 1;
+                push @injArr, $i;
+                last;
+            }
+        }
+        if($foundFlag==0){
+            die "inject $g @{$injectMap{$g}} not in primer pair list\n";
+        }
+    }
+    $ga->inject( [ \@injArr ] );
+}
+
 my $iteration = 0;
 my ($max, $mean, $min) = $ga->getAvgFitness();
 $max = 1/$max;
 $min = 1/$min;
 
-open(scoreOUT,">$outPrefix.score");
-scoreOUT->autoflush(1);
+if($as_child){
+    open(scoreOUT,">&",STDOUT);
+    scoreOUT->autoflush(1);
+}else{
+    open(scoreOUT,">$outPrefix.score");
+    scoreOUT->autoflush(1);
+}
 
 # GA parameters
 print scoreOUT "GA related parameters:\n";
@@ -149,7 +198,11 @@ for(my $i=0; $i<@bests; $i++){
     my @indexes = $ga->as_array($bests[$i]);
     my @genes   = sort keys %{$genePrimerPairsRef};
 
-    open(iterOUT,">$outPrefix.best$i");
+    if($as_child){
+        open(iterOUT,">&",STDOUT);
+    }else{
+        open(iterOUT,">$outPrefix.best$i");
+    }
     for(my $i=0; $i<@genes; $i++){
         my @primers = @{${$genePrimerPairsRef->{$genes[$i]}}[$indexes[$i]]};
         print iterOUT "$genes[$i]\t$primers[0]\t$primers[1]\n";
@@ -158,7 +211,11 @@ for(my $i=0; $i<@bests; $i++){
 }
 
 # save GA states
-$ga->save("$outPrefix.GA");
+if($as_child){
+    # do nothing
+}else{
+    $ga->save("$outPrefix.GA");
+}
     
 #### SADDLE GA iteration, END
 
