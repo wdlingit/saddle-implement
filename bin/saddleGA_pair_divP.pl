@@ -414,7 +414,6 @@ sub evolve {
 
         # preserve best
         for(my $i=0; $i<$preserve || $i<int((1-$crossoverRate)*@$populationRef); $i++){
-            # fitness part
             push @new_population, $$populationRef[$sortedIdx[$i]];
             if($i>=$preserve && rand()<$mutationRate){
                 # non-preserved ones might be mutated
