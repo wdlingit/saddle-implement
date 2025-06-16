@@ -7,6 +7,8 @@ use File::Spec;
 use File::Path qw(make_path remove_tree);
 use File::Basename;
 
+use JSON;
+
 use IPC::Open2;
 
 my $baseDir = dirname(__FILE__);
@@ -14,7 +16,7 @@ if($baseDir!~/^\//){
     $baseDir = File::Spec->rel2abs( $baseDir ) ;
 }
 
-my $debug = 0;
+my $debug = 1;
 
 $| = 1;
 
@@ -31,6 +33,8 @@ my $ga1_population = 200;
 my $ga1_preserve   = 1;
 my $ga1_crossover  = 0.9;
 my $ga1_mutation   = 0.05;
+
+my $startStateFile = "";
 
 # GA2: the underlying SADDLE
 my $badnessMinOverlap = 4; # as suggested in the paper
@@ -50,6 +54,7 @@ $usage   .= "        -GApopulation1 : GA parameter population (default: $ga1_pop
 $usage   .= "        -GApreserve1   : GA parameter preserve (default: $ga1_preserve)\n";
 $usage   .= "        -GAcrossover1  : GA parameter crossover (default: $ga1_crossover)\n";
 $usage   .= "        -GAmutation1   : GA parameter mutation (default: $ga1_mutation)\n";
+$usage   .= "        -startState    : load saved GA state (default: \"$startStateFile\")\n";
 $usage   .= "    SADDLE GA options:\n";
 $usage   .= "        -minOverlap : minimum reversecomplement to compute badness (default: $badnessMinOverlap)\n";
 $usage   .= "        -testIt     : test iteration (default: $ga2_iteration)\n";
@@ -68,6 +73,9 @@ for my $i (0..@ARGV-1) {
 		delete @arg_idx[$i,$i+1];
 	}elsif ($ARGV[$i] eq '-cpu') {
 		$ncpu = $ARGV[$i+1];
+		delete @arg_idx[$i,$i+1];
+	}elsif ($ARGV[$i] eq '-startState') {
+		$startStateFile = $ARGV[$i+1];
 		delete @arg_idx[$i,$i+1];
 # Group division parameters
 	}elsif ($ARGV[$i] eq '-report') {
@@ -157,12 +165,6 @@ print scoreOUT "    -GAcrossover2  : $ga2_crossover\n";
 print scoreOUT "    -GAmutation2   : $ga2_mutation\n";
 print scoreOUT "\n";
 
-# MCE::Map init
-MCE::Map->init({
-    max_workers => $ncpu,
-    chunk_size  => 1
-});
-
 # fitness function reference
 my $fitnessFuncRef = \&fitness;
 
@@ -181,9 +183,55 @@ for(my $i=0;$i<@initArray;$i++){
         $initArray[$i]=1;
     }
 }
-my ($populationRef, $fitnessScoreRef, $fitnessAnsRef) = initialize_population($ga1_population, 
-                                                                              \@initArray, 
-                                                                              $fitnessFuncRef);
+
+my ($populationRef, $fitnessScoreRef, $fitnessAnsRef);
+
+if(length($startStateFile)){
+    if($debug){
+        print STDERR "state read start\n";
+    }
+    # read from a state JSON file
+    open(stateIN,"<$startStateFile");
+    my $json_text = do { local $/; <stateIN> };
+    close stateIN;
+    
+    my $data = decode_json($json_text);
+    my @population = ();
+    my @fitnessScores = ();
+    my %fitnessAnswer = ();
+    # population
+    for my $i (sort {$a<=>$b} keys %{$data->{"population"}}){
+        my @arr = @{$data->{"population"}->{$i}};
+        push @population, \@arr;
+    }
+    # fitness
+    for my $i (sort {$a<=>$b} keys %{$data->{"fitness"}}){
+        $fitnessScores[$i] = $data->{"fitness"}->{$i};
+    }
+    # answer
+    for my $i (sort {$a<=>$b} keys %{$data->{"answer"}}){
+        my $arrRef = $data->{"answer"}->{$i};
+        $fitnessAnswer{$i} = $arrRef;
+    }
+
+    if($debug){
+        print STDERR "state read end\n";
+    }
+    
+    ($populationRef, $fitnessScoreRef, $fitnessAnsRef) = (\@population, \@fitnessScores, \%fitnessAnswer);
+}else{
+    if($debug){
+        print STDERR "population initialization start\n";
+    }
+    # regular initialization
+    ($populationRef, $fitnessScoreRef, $fitnessAnsRef) = initialize_population($ga1_population, 
+                                                                               \@initArray, 
+                                                                               $fitnessFuncRef);
+    if($debug){
+        print STDERR "population initialization end\n";
+    }
+}
+
 
 my $iteration = 0;
 my ($max, $min) = getBestWorstScore($fitnessScoreRef);
@@ -196,6 +244,9 @@ print scoreOUT "Iteration best and worst\n";
 print scoreOUT "$iteration $max $min\n";
 
 while($iteration<$ga1_iteration){
+    if($debug){
+        print STDERR "iteartion ".($iteration+1)."\n";
+    }
     ($populationRef, $fitnessScoreRef, $fitnessAnsRef) = evolve($populationRef,
                                                                 $fitnessScoreRef,
                                                                 $fitnessAnsRef,
@@ -213,20 +264,24 @@ while($iteration<$ga1_iteration){
 }
 close scoreOUT;
 
-# GA output
-# my @bests = $ga->getFittest($numReport, 1); # 1 for uniq answers
-# 
-# for(my $i=0; $i<@bests; $i++){
-#     my @indexes = $ga->as_array($bests[$i]);
-#     my @genes   = sort keys %{$genePrimerPairsRef};
-#
-#     open(iterOUT,">$outPrefix.best$i");
-#     for(my $i=0; $i<@genes; $i++){
-#         my @primers = @{${$genePrimerPairsRef->{$genes[$i]}}[$indexes[$i]]};
-#         print iterOUT "$genes[$i]\t$primers[0]\t$primers[1]\n";
-#     }
-#     close iterOUT;
-# }
+# GA state output, should include
+# (i) current population
+# (ii) best primer selection inside each individual
+# so that this can be loaded and continued
+my %jsonHash = ();
+for(my $i=0; $i<@$populationRef; $i++){
+    $jsonHash{"population"}{$i} = $$populationRef[$i];
+    $jsonHash{"fitness"}{$i}    = $$fitnessScoreRef[$i];
+    $jsonHash{"answer"}{$i}     = $$fitnessAnsRef{$i};
+}
+open(stateOUT, ">$outPrefix.state");
+print stateOUT to_json(\%jsonHash, { pretty => 1 })."\n";
+close stateOUT;
+
+# GA report output, should include
+# (i) best current population
+# (ii) best primer selection inside each individual
+report_bestN($populationRef, $fitnessScoreRef, $fitnessAnsRef, $outPrefix, $numReport);
 
 #### target combination GA iteration, END
 
@@ -236,8 +291,6 @@ sub fitness {
     my $chromosome = $inArrRef->[0]; # this should be an array ref
     my $answerRef  = $inArrRef->[1]; # this should be an array ref of
                                      # refs of target-left-right triples
-
-    print "answer size [1]: ".@$answerRef."\n" if $debug;
 
     # build target answer hash
     my %targetAnswerHash = ();
@@ -278,7 +331,6 @@ sub fitness {
             push @ansArr, $target, $leftP, $rightP;
         }
     }
-    print "answer size [2]: ".(@ansArr-1)."\n" if $debug;
     # turn total badness into fitness
     $ansArr[0] = 1/$ansArr[0];
     
@@ -360,9 +412,11 @@ sub getBestWorstScore{
     return ($fitnessHash{$sortedIdx[0]}, $fitnessHash{$sortedIdx[-1]});
 }
 
-sub get_best{
+sub report_bestN{
     my $populationRef   = shift;
     my $fitnessScoreRef = shift;
+    my $fitnessAnsRef   = shift;
+    my $outPrefix       = shift;
     my $bestN           = shift;
 
     my %fitnessHash = ();
@@ -371,19 +425,32 @@ sub get_best{
     }
     my @sortedIdx = sort {$fitnessHash{$b}<=>$fitnessHash{$a}} keys %fitnessHash;
 
-    my @ansList;
+    # for each of the best individual
     for(my $i=0;$i<$bestN;$i++){
-        push @ansList, $$populationRef[$sortedIdx[$i]];
+        open(iterOUT,">$outPrefix.best$i");
+        
+        # build target-answer map
+        my %targetAnswer = ();
+        for my $tripleRef (@{$fitnessAnsRef->{$sortedIdx[$i]}}){
+            $targetAnswer{$$tripleRef[0]} = $tripleRef;
+        }
+        # build group-target map
+        my %groupTarget = ();
+        for(my $j=0; $j<@{$$populationRef[$sortedIdx[$i]]}; $j++){
+            $groupTarget{${$$populationRef[$sortedIdx[$i]]}[$j]}{$targetArray[$j]}=1;
+        }
+        # output
+        for my $group (sort {$a<=>$b} keys %groupTarget){
+            for my $target (sort keys %{$groupTarget{$group}}){
+                print iterOUT "$group\t@{$targetAnswer{$target}}\n";
+            }
+        }
+        
+        close iterOUT;
     }
-
-    return \@ansList;
 }
 
 sub evolve {
-    if($debug){
-        print "@_\n";
-    }
-    
     my $populationRef   = shift;
     my $fitnessScoreRef = shift;
     my $fitnessAnsRef   = shift;
@@ -412,11 +479,10 @@ sub evolve {
         }
         my @sortedIdx = sort {$fitnessHash{$b}<=>$fitnessHash{$a}} keys %fitnessHash;
         
-        if($debug){
-            print "parent BEST: ".(1/$fitnessHash{$sortedIdx[0]})."\n";
-        }
-
         # best
+        if($debug){
+            print STDERR "iteartion ".($iteration+1).": best preserve\n";
+        }
         while(@new_population<$preserve || @new_population<int((1-$crossoverRate)*@$populationRef)){
             my @new_chr = @{$$populationRef[$sortedIdx[@new_population]]};
             
@@ -454,6 +520,9 @@ sub evolve {
         my $totalFitness = $cFitness[-1];
 
         # fill rest slots by Roulette selection + crossover rate + mutation rate
+        if($debug){
+            print STDERR "iteartion ".($iteration+1).": crossover\n";
+        }
         while(@new_population < @$populationRef){
             # pick parent 1
             my $randSel = rand($totalFitness);
@@ -485,12 +554,17 @@ sub evolve {
             }
         }
         
+        if($debug){
+            print STDERR "iteartion ".($iteration+1).": fitness\n";
+        }
         $populationRef = \@new_population;
-        # test code
         $fitnessAnsRef = \%new_fitnessAnsHash;
         ($fitnessScoreRef, $fitnessAnsRef) = population_fitness($populationRef, 
                                                                 $fitnessFuncRef,
                                                                 $fitnessAnsRef);
+        if($debug){
+            print STDERR "iteartion ".($iteration+1).": done\n";
+        }
     }
     
     return ($populationRef, $fitnessScoreRef, $fitnessAnsRef);
@@ -520,7 +594,6 @@ sub population_fitness {
     my $fitnessAnsRef = shift;
 
     my @tmpKeys = keys %{$fitnessAnsRef};
-    print "answer ref [4]: $fitnessAnsRef ".(keys %{$fitnessAnsRef}).": @tmpKeys\n" if $debug;
 
     # build input array of arrays based on populationRef and fitnessAnsRef
     my @inputArray = ();
@@ -535,13 +608,21 @@ sub population_fitness {
             my @empty = ();
             push @{$inputArray[$i]}, \@empty;
         }
-        print "answer size [6]: $i ".(@{$inputArray[$i]->[1]})."\n" if $debug;
     }
+
+    # MCE::Map init
+    MCE::Map->init({
+        max_workers => $ncpu,
+        chunk_size  => 1
+    });
 
     # MCE::Map
     my @fitnessArrays = mce_map {
         $fitnessFuncRef->($_);
     } \@inputArray;
+    
+    # MCE::Map manual shutdown
+    MCE::Map->finish;
 
     # build fitnessdScores and fitnessAns as definition
     my @fitnessScores;
@@ -556,7 +637,6 @@ sub population_fitness {
             push @answerArray, \@triple;
         }
         $fitnessAnsHash{$i} = \@answerArray;
-        print "answer size [3]: ".(@{$fitnessArrays[$i]})." ".(@answerArray)." ".(@{$fitnessAnsHash{$i}})."\n" if $debug;
     }
     
     return (\@fitnessScores, \%fitnessAnsHash);
