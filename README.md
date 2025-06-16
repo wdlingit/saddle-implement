@@ -47,7 +47,7 @@ Note that it seems that the option `-rand` is affecting the initial generation o
 
 The input file `genePairedPrimerFile` is as described for script `saddle_pair.pl`. Other files with name prefix `outPrefix` are:
 1. `<outPrefix>.score`: GA parameters at the beginning, and the best and the worst badness for each generation/iteration.
-2. `<outPrefix>.bestN`: primer pair combination of best N individuals. This number can be specified by `-report`. These files can be applied to options `-badness` and `startWith` of `saddle_pair.pl`.
+2. `<outPrefix>.bestN`: primer pair combination of best N individuals. This number can be specified by `-report`. These files can be applied to options `-badness` and `-startWith` of `saddle_pair.pl`.
 3. `<outPrefix>.GA`: GA state file. This file should be loadable by the `AI::Genetic::Pro` module.
 
 Under WSL ubuntu of my desktop PC, this script (with default parameters) took about one hour for 96 targets.
