@@ -17,6 +17,7 @@ if($baseDir!~/^\//){
 }
 
 my $debug = 1;
+my $debug_sig = 0;
 
 $| = 1;
 
@@ -232,6 +233,12 @@ if(length($startStateFile)){
     }
 }
 
+if($debug_sig){
+    print STDERR "population out:\n";
+    for(my $i=0; $i<@$populationRef; $i++){
+        print STDERR "".sprintf("%03d",$i)." ".chromosome_signature($$populationRef[$i])."\n";
+    }
+}
 
 my $iteration = 0;
 my ($max, $min) = getBestWorstScore($fitnessScoreRef);
@@ -467,6 +474,12 @@ sub evolve {
     # every generation
     for my $gen (1..$GENERATIONS) {
     
+        if($debug_sig){
+            print STDERR "population in:\n";
+            for(my $i=0; $i<@$populationRef; $i++){
+                print STDERR "".sprintf("%03d",$i)." ".chromosome_signature($$populationRef[$i])."\n";
+            }
+        }
         my @new_population = ();
         my %new_fitnessAnsHash = ();
         
@@ -490,6 +503,9 @@ sub evolve {
             if(@new_population<$preserve){
                 # populationPool update
                 $populationPool{chromosome_signature(\@new_chr)}=1;
+                if($debug_sig){
+                    print STDERR "sig pool preserv add: $sortedIdx[@new_population] : ".chromosome_signature(\@new_chr)."\n";
+                }
                 # add answer part
                 $new_fitnessAnsHash{@new_population} = $fitnessAnsRef->{$sortedIdx[@new_population]};
                 # add to new population
@@ -504,6 +520,9 @@ sub evolve {
                 if(not exists $populationPool{$signature}){
                     # populationPool update
                     $populationPool{$signature}=1;
+                    if($debug_sig){
+                        print STDERR "sig pool best add: $sortedIdx[@new_population] : $signature\n";
+                    }
                     # add answer part
                     $new_fitnessAnsHash{@new_population} = $fitnessAnsRef->{$sortedIdx[@new_population]};
                     # add to new population
@@ -514,7 +533,7 @@ sub evolve {
 
         # establish a cumulative array of fitness
         my @cFitness = (0);
-        for($i=0;$i<@sortedIdx;$i++){
+        for(my $i=0;$i<@sortedIdx;$i++){
             push @cFitness, ($fitnessHash{$sortedIdx[$i]} + $cFitness[-1]);
         }
         my $totalFitness = $cFitness[-1];
@@ -529,10 +548,13 @@ sub evolve {
             my $parent1Idx = binary_search(\@cFitness, $randSel);
             # pick parent 2
             my $parent2Idx = $parent1Idx;
-            while($parent2Idx!=$parent1Idx){
+            while($parent2Idx==$parent1Idx){
                 $randSel = rand($totalFitness);
                 $parent2Idx = binary_search(\@cFitness, $randSel);
             }
+            
+            my $sigFail = 0; # this is for debug
+            
             # crossover
             my ($new_chr, $new_ans) = shrinking_crossover($$populationRef[$sortedIdx[$parent1Idx]],
                                                           $$populationRef[$sortedIdx[$parent2Idx]],
@@ -544,13 +566,41 @@ sub evolve {
             }
             # signature check to avoid duplicates
             my $signature = chromosome_signature($new_chr);
+            if($debug_sig){
+                print STDERR "iteartion ".($iteration+1).": signature check\n";
+            }
             if(not exists $populationPool{$signature}){
+                if($debug_sig){
+                    print STDERR "iteartion ".($iteration+1).": signature pass\n";
+                }
                 # populationPool update
                 $populationPool{$signature}=1;
+                if($debug_sig){
+                    print STDERR "sig pool add: $signature\n";
+                }
                 # add answer part
                 $new_fitnessAnsHash{@new_population} = $new_ans;
                 # add to new population
                 push @new_population, $new_chr;
+            }elsif($debug_sig){
+                $sigFail++;
+                
+                if($sigFail>=10){
+                    print STDERR "cFitness: @cFitness\n";
+                    print STDERR "last random sel val: $randSel\n";
+                    print STDERR "last random sel idx: $parent1Idx $parent2Idx\n";
+                    print STDERR "prnt1: ".chromosome_signature($$populationRef[$sortedIdx[$parent1Idx]])."\n";
+                    print STDERR "prnt2: ".chromosome_signature($$populationRef[$sortedIdx[$parent2Idx]])."\n";
+                    print STDERR "child: $signature\n";
+                    print STDERR "current pool\n";
+                    for(my $i=0; $i<@new_population; $i++){
+                        print STDERR "".sprintf("%03d",$i)." ".chromosome_signature($new_population[$i]);
+                        print STDERR "<==" if chromosome_signature($new_population[$i]) eq $signature;
+                        print STDERR "\n";
+                    }
+                    
+                    exit 1;
+                }
             }
         }
         
@@ -650,12 +700,15 @@ sub initialize_population {
     # generate randomized population
     my @population;
     while(@population < $size) {
-        @new_chr = shuffle(@{$elementsRef}); # Random permutation
+        my @new_chr = shuffle(@{$elementsRef}); # Random permutation
         my $signature = chromosome_signature(\@new_chr);
         # signature check to avoid duplicates
         if(not exists $populationPool{$signature}){
             push @population, \@new_chr;
             $populationPool{$signature} = 1;
+            if($debug_sig){
+                print STDERR "sig pool add: $signature\n";
+            }
         }
     }
     
@@ -762,5 +815,11 @@ sub swap_mutation {
         $index1 = int(rand(@$chromosome));
     }
 
+    if($debug_sig){
+        print STDERR "swap before: ".chromosome_signature($chromosome)."\n";
+    }
     @$chromosome[$index0, $index1] = @$chromosome[$index1, $index0];  # Swap two elements
+    if($debug_sig){
+        print STDERR "swap after : ".chromosome_signature($chromosome)."\n";
+    }
 }
