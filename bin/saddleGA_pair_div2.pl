@@ -48,7 +48,6 @@ my $ga2_mutation   = 0.20;
 
 my $usage = "Usage: saddleGA_pair_div2.pl [options] <genePairedPrimerFile> <outPrefix>\n";
 $usage   .= "    Group division:\n";
-$usage   .= "        -cpu           : GA parameter mutation (default: $ga1_mutation)\n";
 $usage   .= "        -report     : number of top answers to report (default: $numReport)\n";
 $usage   .= "        -maxIt      : maximum iteration (default: $ga1_iteration)\n";
 $usage   .= "        -GApopulation1 : GA parameter population (default: $ga1_population)\n";
@@ -85,11 +84,11 @@ for my $i (0..@ARGV-1) {
 	}elsif ($ARGV[$i] eq '-maxIt') {
 		$ga1_iteration = $ARGV[$i+1];
 		delete @arg_idx[$i,$i+1];
-	}elsif ($ARGV[$i] eq '-GApopulation1') {
-		$ga1_population = $ARGV[$i+1];
-		delete @arg_idx[$i,$i+1];
 	}elsif ($ARGV[$i] eq '-GApreserve1') {
 		$ga1_preserve = $ARGV[$i+1];
+		delete @arg_idx[$i,$i+1];
+	}elsif ($ARGV[$i] eq '-GApopulation1') {
+		$ga1_population = $ARGV[$i+1];
 		delete @arg_idx[$i,$i+1];
 	}elsif ($ARGV[$i] eq '-GAcrossover1') {
 		$ga1_crossover = $ARGV[$i+1];
