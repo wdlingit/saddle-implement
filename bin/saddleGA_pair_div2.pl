@@ -168,9 +168,9 @@ print scoreOUT "\n";
 # fitness function reference
 my $fitnessFuncRef = \&fitness;
 
-# initialization, let populationRef fitnessRef fitnessAnsRef represent one generation
+# initialization, let populationRef fitnessScoreRef fitnessAnsRef represent one generation
 # populationRef: array ref to individuals, where a individual is an ref to an array of combination
-# fitnessRef   : array ref to an array of computed fitness scores of this generation
+# fitnessScoreRef: array ref to an array of computed fitness scores of this generation
 # fitnessAnsRef{individual} = [ [target, left, right], ... ]
 #        (index in population)   ^^^^^^^^^^^^^^^^^^^best answer of target (in some chunk)
 my @targetArray = sort keys %genePrimerPairs; # for quick reference
