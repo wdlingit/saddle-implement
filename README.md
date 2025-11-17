@@ -51,3 +51,32 @@ The input file `genePairedPrimerFile` is as described for script `saddle_pair.pl
 3. `<outPrefix>.GA`: GA state file. This file should be loadable by the `AI::Genetic::Pro` module.
 
 Under WSL ubuntu of my desktop PC, this script (with default parameters) took about one hour for 96 targets.
+
+## `saddleGA_pair_divN.pl`
+
+Two-layered Genetic Algorithm implementation that divides targets into groups of specified sizes and reduce sum of all within-group badness.
+
+```
+saddle-implement/bin$ ./saddleGA_pair_divN.pl
+Usage: saddleGA_pair_divN.pl [options] <genePairedPrimerFile> <outPrefix>
+    Group division:
+        -group      : if a number, divide targets into this number of groups
+                      if a file of group name-target numbers, divide targets
+                      into specified groups with specified numbers (default: 2)
+        -report     : number of top answers to report (default: 5)
+        -maxIt      : maximum iteration (default: 100)
+        -GApopulation1 : GA parameter population (default: 200)
+        -GApreserve1   : GA parameter preserve (default: 1)
+        -GAcrossover1  : GA parameter crossover (default: 0.9)
+        -GAmutation1   : GA parameter mutation (default: 0.05)
+        -startState    : load saved GA state (default: "")
+    SADDLE GA options:
+        -minOverlap : minimum reversecomplement to compute badness (default: 4)
+        -testIt     : test iteration (default: 150)
+        -GApopulation2 : GA parameter population (default: 1000)
+        -GAcrossover2  : GA parameter crossover (default: 0.6)
+        -GAmutation2   : GA parameter mutation (default: 0.2)
+    Others:
+        -rand       : random seed (default: 0)
+        -cpu        : number of CPUs for computation (default: 2)
+```
