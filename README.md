@@ -111,7 +111,7 @@ $ wc -l stage0.state
 116209 stage0.state
 ```
 
-The GA state was passed to the next execution (stage1) by assigning the `-startState` option and the same `-group` setting. In this execution, we assigned the second layer GA to iterate 20 generations. In file `stage1.score`, it was observed that the best and worst _badness_ scores at iteration 0 is exactly the same with those at the 20th iteration of stage0. This showed that the _state_ of the GA was actully passed from stage0 to stage1. In so doing, we can apply different GA parameters to the two layers in a series executions of `saddleGA_pair_divN.pl` to achieve better performance then monotone GA setting. 
+The GA state was passed to the next execution (stage1) by assigning the `-startState` option and the same `-group` setting. In this execution, we assigned the second layer GA to iterate 20 generations. In file `stage1.score`, it was observed that the best and worst _badness_ scores at iteration 0 is exactly the same with those at the 20th iteration of stage0. This showed that the _state_ of the GA was actully passed from stage0 to stage1. In so doing, we can apply different GA parameters to the two layers in a series executions of `saddleGA_pair_divN.pl`. This can help us to achieve better performance then monotone GA setting. 
 ```
 $ saddleGA_pair_divN.pl -startState stage0.state -group groups.txt -cpu 35 -maxIt 20 -GApopulation1 200 -GApreserve1 10 -GAcrossover1 0.6 -GAmutation1 0.1 -testIt 20 -GApopulation2 100 genePrimers_220a.txt stage1
 (output deleted)
