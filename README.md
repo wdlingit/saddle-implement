@@ -54,7 +54,7 @@ Under WSL ubuntu of my desktop PC, this script (with default parameters) took ab
 
 ## saddleGA_pair_divN.pl
 
-Two-layered Genetic Algorithm implementation that divides targets into groups of specified sizes and reduce sum of all within-group _badness_. Would be suitable if there are too many targets for single multiplex PCR reaction or if small size mulplex PCR reactions were desired.
+Two-layered Genetic Algorithm implementation that divides targets into groups of specified sizes (the first layer GA) and reduce of all within-group _badness_ (the second layer GA, i.e. `saddleGA_pair.pl`). Would be suitable if there are too many targets for single multiplex PCR reaction or if small size mulplex PCR reactions were desired.
 
 ```
 saddle-implement/bin$ ./saddleGA_pair_divN.pl
@@ -86,8 +86,59 @@ The input file `genePairedPrimerFile` is as described for script `saddle_pair.pl
 2. `<outPrefix>.bestN`: Text files showing group composition and primer pair combination of best N individuals. This number can be specified by `-report`. These files can be applied to options `-badness` of `saddle_pair.pl`. See below for an example.
 3. `<outPrefix>.state`: GA state file. This file can be loaded by using the `-startState` option.
 
+### Example of using the state file
+
+The `.state` file is for storing GA state so that `saddleGA_pair_divN.pl` can be executed multiple times with different GA parameters and passing the _state of GA_. In so doing, the best solutions can be kept evolving along all the executions. Here is an example. File `groups.txt` assigned four groups A/B/C/D for dividing 96 targets.
+
+```
+$ cat groups.txt
+A 24
+B 24
+C 24
+D 24
+```
+
+The first execution of `saddleGA_pair_divN.pl` (stage0) iterated the first layer GA with 20 generations (`-maxIt 20`). After the 20 generations, we can see the best and worst _badness_ scores in the population in file `stage0.score`. The population was saved in file `stage0.state`
+```
+$ saddleGA_pair_divN.pl -group groups.txt -cpu 35 -maxIt 20 -GApopulation1 200 -GApreserve1 10 -GAcrossover1 0.6 -GAmutation1 0.1 -testIt 10 -GApopulation2 100 genePrimers_220a.txt stage0
+(output deleted)
+
+$ tail -n 2 stage0.score
+19 21054.1035539059 28231.4290461235
+20 21010.8588862839 28114.5916906677
+
+$ wc -l stage0.state
+116209 stage0.state
+```
+
+The GA state was passed to the next execution (stage1) by assigning the `-startState` option and the same `-group` setting. In this execution, we assigned the second layer GA to iterate 20 generations. In file `stage1.score`, it was observed that the best and worst _badness_ scores at iteration 0 is exactly the same with those at the 20th iteration of stage0. This showed that the _state_ of the GA was actully passed from stage0 to stage1. In so doing, we can apply different GA parameters to the two layers in a series executions of `saddleGA_pair_divN.pl` to achieve better performance then monotone GA setting. 
+```
+$ saddleGA_pair_divN.pl -startState stage0.state -group groups.txt -cpu 35 -maxIt 20 -GApopulation1 200 -GApreserve1 10 -GAcrossover1 0.6 -GAmutation1 0.1 -testIt 20 -GApopulation2 100 genePrimers_220a.txt stage1
+(output deleted)
+
+$ head -17 stage1.score
+GA related parameters:
+Level 1:
+    -maxIt         : 20
+    -GApopulation1 : 200
+    -GApreserve1   : 10
+    -GAcrossover1  : 0.6
+    -GAmutation1   : 0.1
+Level 2:
+    -testIt        : 20
+    -GApopulation2 : 100
+    -GAcrossover2  : 0.6
+    -GAmutation2   : 0.2
+
+Iteration best and worst
+0 21010.8588862839 28114.5916906677
+1 20478.9256562984 26327.8371593806
+2 20154.4374091816 26380.2592372486
+```
+
 ### Example of using the bestN file
 
+The following perl one-liner helps to calculate within group badness scores and total badness scores in a `.bestN` file. Remember to adjust the path to `saddle_pair.pl`.
 ```
 $ cat stage4.best0 | perl -MIPC::Open2 -ne 'chomp; @t=split; push @{$hash{shift @t}}, join("\t",@t); if(eof){ for $k (sort keys %hash){ open2(COUT,CIN,"/path/to/saddle_pair.pl -badness /dev/stdin"); print CIN join("\n",@{$hash{$k}})."\n"; close CIN; while($outline=<COUT>){ chomp $outline; if(length($outline)>0){ $sum+=$outline; print "$k\t$outline\n"} } } print "SUM\t$sum\n"; }'
 A       3468.85676282468
