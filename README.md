@@ -54,7 +54,7 @@ Under WSL ubuntu of my desktop PC, this script (with default parameters) took ab
 
 ## saddleGA_pair_divN.pl
 
-Two-layered Genetic Algorithm implementation that divides targets into groups of specified sizes (the first layer GA) and reduce of all within-group _badness_ (the second layer GA, i.e. `saddleGA_pair.pl`). Would be suitable if there are too many targets for single multiplex PCR reaction or if small size mulplex PCR reactions were desired.
+Two-layered Genetic Algorithm implementation that divides targets into groups of specified sizes (the first layer GA) and reduce all within-group _badness_ (the second layer GA, i.e. `saddleGA_pair.pl`). Would be suitable if there are too many targets for single multiplex PCR reaction or if small size mulplex PCR reactions were desired.
 
 ```
 saddle-implement/bin$ ./saddleGA_pair_divN.pl
@@ -146,4 +146,13 @@ B       3872.91467408912
 C       6626.79507158898
 D       3014.22188743838
 SUM     16982.7883959412
+```
+
+### A special use case
+
+Given that each target has exactly one primer pair to use, `saddleGA_pair_divN.pl` can serve as a one-layered GA program that just divide targets into groups of specified sizes (for best total _badness_). To do this, set the second layer GA parameters `-testIt 0` and `-GApopulation2 1`. This would make the second layer GA only evaluate _badness_ scores without doing evolution.
+
+In the following real example, we took best primer selection for 96 targets made by `saddleGA_pair.pl` as the input. Applied `saddleGA_pair_divN.pl` to divied 96 targets into two 48-groups. It was found that the total badness made by `saddleGA_pair_divN.pl` is significantly lower than divisions made by random.
+```
+$ saddleGA_pair_divN.pl -cpu 35 -report 1 -maxIt 200 -GApopulation1 1000 -GApreserve1 50 -GAcrossover1 0.6 -GAmutation1 0.1 -testIt 0 -GApopulation2 1 saddleGA_1000_060_020.best0 prefix
 ```
