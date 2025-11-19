@@ -1,7 +1,7 @@
 # saddle-implement
 
 Implement of the iteration part of the SADDLE framework (PMID: 35410464) for multiplex PCR primer design. Two versions and one extension in this repository:
-1. [AAA](#saddlega_pairpl)
+1. [AAA](#saddle_pairpl)
 1. [BBB](#saddlega_pairpl)
 1. [CCC](#saddlega_pair_divnpl)
 
