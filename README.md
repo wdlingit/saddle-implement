@@ -54,7 +54,7 @@ Under WSL ubuntu of my desktop PC, this script (with default parameters) took ab
 
 ## saddleGA_pair_divN.pl
 
-Two-layered Genetic Algorithm implementation that divides targets into groups of specified sizes and reduce sum of all within-group badness. Would be suitable if there are too many targets for single multiplex PCR reaction or if small size mulplex PCR reactions were desired.
+Two-layered Genetic Algorithm implementation that divides targets into groups of specified sizes and reduce sum of all within-group _badness_. Would be suitable if there are too many targets for single multiplex PCR reaction or if small size mulplex PCR reactions were desired.
 
 ```
 saddle-implement/bin$ ./saddleGA_pair_divN.pl
