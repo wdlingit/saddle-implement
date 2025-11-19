@@ -1,6 +1,6 @@
 # saddle-implement
 
-Implement of the iteration part of the SADDLE framework (PMID: 35410464) for multiplex PCR primer design. Two versions and one extension in this repository:
+Implement of the iteration part of the SADDLE framework (PMID: 35410464) for multiplex PCR primer design. Two versions of implementations and one functional extension in this repository:
 1. [Simple perl implementation](#saddle_pairpl)
 1. [Genetic Algorithm implementation](#saddlega_pairpl)
 1. [Tow-layered GA that divides targets into groups](#saddlega_pair_divnpl)
