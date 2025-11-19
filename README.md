@@ -1,9 +1,9 @@
 # saddle-implement
 
 Implement of the iteration part of the SADDLE framework (PMID: 35410464) for multiplex PCR primer design. Two versions and one extension in this repository:
-1. [AAA](#saddle_pairpl)
-1. [BBB](#saddlega_pairpl)
-1. [CCC](#saddlega_pair_divnpl)
+1. [Simple perl implementation](#saddle_pairpl)
+1. [Genetic Algorithm implementation](#saddlega_pairpl)
+1. [Tow-layered GA that divides targets into groups](#saddlega_pair_divnpl)
 
 NOTE: In this implementation, _badness_ is computed directly following Eq1 and Eq2 from the SADDLE paper. The _hash_ described in the paper was not included. Insteadly, this implementation caches _badness_ of all ever-computed primer pairs. When computing _badness_ of one given primer pair, min-mer lookup table and dot plot approaches were applied. This should be faster than simple substring comparisons.
 
