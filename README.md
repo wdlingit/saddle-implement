@@ -83,5 +83,16 @@ Usage: saddleGA_pair_divN.pl [options] <genePairedPrimerFile> <outPrefix>
 
 The input file `genePairedPrimerFile` is as described for script `saddle_pair.pl`. Other files with name prefix `outPrefix` are:
 1. `<outPrefix>.score`: GA parameters at the beginning, and the best and the worst badness for each generation/iteration.
-2. `<outPrefix>.bestN`: primer pair combination of best N individuals. This number can be specified by `-report`. These files can be applied to options `-badness` and `-startWith` of `saddle_pair.pl`.
-3. `<outPrefix>.GA`: GA state file. This file should be loadable by the `AI::Genetic::Pro` module.
+2. `<outPrefix>.bestN`: Text files showing group composition and primer pair combination of best N individuals. This number can be specified by `-report`. These files can be applied to options `-badness` of `saddle_pair.pl`. See below for an example.
+3. `<outPrefix>.state`: GA state file. This file can be loaded by using the `-startState` option.
+
+### Example of using the bestN file
+
+```
+$ cat stage4.best0 | perl -MIPC::Open2 -ne 'chomp; @t=split; push @{$hash{shift @t}}, join("\t",@t); if(eof){ for $k (sort keys %hash){ open2(COUT,CIN,"/path/to/saddle_pair.pl -badness /dev/stdin"); print CIN join("\n",@{$hash{$k}})."\n"; close CIN; while($outline=<COUT>){ chomp $outline; if(length($outline)>0){ $sum+=$outline; print "$k\t$outline\n"} } } print "SUM\t$sum\n"; }'
+A       3468.85676282468
+B       3872.91467408912
+C       6626.79507158898
+D       3014.22188743838
+SUM     16982.7883959412
+```
