@@ -1,6 +1,6 @@
 # saddle-implement
 
-Implement of the iteration part of the SADDLE framework (PMID: 35410464) for multiplex PCR primer design. Two versions of implementations and one functional extension in this repository:
+Implement of the iteration part of the SADDLE framework (PMID: 35410464) for multiplex PCR primer design. Given that each target has a number of primer pairs can be used, programs in this repository can be used for primer pair selection that reduces the possibility of primer dimer formation. Two versions of implementations and one functional extension in this repository:
 1. [Simple perl implementation](#saddle_pairpl)
 1. [Genetic Algorithm implementation](#saddlega_pairpl)
 1. [Tow-layered GA that divides targets into groups](#saddlega_pair_divnpl)
@@ -153,7 +153,7 @@ SUM     16982.7883959412
 
 ### A special use case
 
-Given that each target has exactly one primer pair to use, `saddleGA_pair_divN.pl` can serve as a one-layered GA program that just divide targets into groups of specified sizes (for best total _badness_). To do this, set the second layer GA parameters `-testIt 0` and `-GApopulation2 1`. This would make the second layer GA only evaluate _badness_ scores without doing evolution.
+Given that each target has exactly one primer pair to use, `saddleGA_pair_divN.pl` can serve as a one-layered GA program that just divide targets into groups of specified sizes (for best total _badness_). To do this, set the second layer GA parameters `-testIt 0` and `-GApopulation2 1`. This will make the second layer GA only evaluate _badness_ scores without doing evolution.
 
 In the following real example, we took best primer selection for 96 targets made by `saddleGA_pair.pl` as the input. Applied `saddleGA_pair_divN.pl` to divied 96 targets into two 48-groups. It was found that the total badness made by `saddleGA_pair_divN.pl` is significantly lower than those by random divisions.
 ```
